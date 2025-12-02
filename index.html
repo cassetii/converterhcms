@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Converter - Bank Sulselbar</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        .header { text-align: center; color: white; margin-bottom: 30px; }
+        .header h1 { font-size: 1.8rem; margin-bottom: 8px; }
+        .header p { opacity: 0.9; font-size: 0.95rem; }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+        .upload-zone {
+            border: 3px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 50px 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8fafc;
+        }
+        .upload-zone:hover, .upload-zone.dragover { border-color: #2a5298; background: #e8f0fe; }
+        .upload-zone.has-file { border-color: #22c55e; background: #f0fdf4; }
+        .upload-icon { font-size: 48px; margin-bottom: 15px; }
+        .upload-zone h3 { color: #334155; margin-bottom: 8px; }
+        .upload-zone p { color: #64748b; font-size: 0.9rem; }
+        .file-input { display: none; }
+        .file-info { margin-top: 20px; padding: 15px; background: #f1f5f9; border-radius: 8px; display: none; }
+        .file-info.show { display: block; }
+        .file-info h4 { color: #1e3c72; margin-bottom: 10px; }
+        .file-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+        .stat-item { background: white; padding: 12px; border-radius: 8px; text-align: center; }
+        .stat-item .value { font-size: 1.5rem; font-weight: bold; color: #2a5298; }
+        .stat-item .label { font-size: 0.8rem; color: #64748b; }
+        .btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 14px 28px; border: none; border-radius: 8px;
+            font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;
+            margin: 5px;
+        }
+        .btn-primary { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; }
+        .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(42, 82, 152, 0.4); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-success { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: white; }
+        .btn-success:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(34, 197, 94, 0.4); }
+        .actions { margin-top: 25px; text-align: center; }
+        .preview-section { margin-top: 25px; display: none; }
+        .preview-section.show { display: block; }
+        .preview-section h4 { color: #1e3c72; margin-bottom: 15px; }
+        .table-wrapper { overflow-x: auto; border-radius: 8px; border: 1px solid #333; max-height: 400px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        th, td { padding: 8px 10px; text-align: center; border: 1px solid #333; white-space: nowrap; }
+        th { background: #1e3c72; color: white; font-weight: 600; position: sticky; top: 0; }
+        tr:nth-child(even) { background: #f0f0f0; }
+        .processing { display: none; text-align: center; padding: 30px; }
+        .processing.show { display: block; }
+        .spinner {
+            width: 50px; height: 50px; border: 4px solid #e2e8f0; border-top-color: #2a5298;
+            border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .success-message { display: none; text-align: center; padding: 20px; background: #f0fdf4; border-radius: 8px; margin-top: 20px; }
+        .success-message.show { display: block; }
+        .success-message .icon { font-size: 48px; margin-bottom: 10px; }
+        .footer { text-align: center; color: rgba(255,255,255,0.7); margin-top: 30px; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Attendance Converter</h1>
+            <p>Convert Data Absensi Detail → Summary Report (Format Book1ss - 51 Kolom + Border) | Bank Sulselbar</p>
+        </div>
+
+        <div class="card">
+            <div class="upload-zone" id="uploadZone">
+                <div class="upload-icon">📁</div>
+                <h3>Upload File Absensi</h3>
+                <p>Drag & drop file Excel (.xls/.xlsx) atau klik untuk browse</p>
+                <p style="margin-top: 10px; font-size: 0.8rem; color: #94a3b8;">Format: Export dari sistem attendance (detail harian)</p>
+                <input type="file" class="file-input" id="fileInput" accept=".xls,.xlsx,.html">
+            </div>
+
+            <div class="file-info" id="fileInfo">
+                <h4>📄 Informasi File</h4>
+                <div class="file-stats">
+                    <div class="stat-item">
+                        <div class="value" id="totalRows">0</div>
+                        <div class="label">Total Records</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="value" id="totalEmployees">0</div>
+                        <div class="label">Karyawan</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="value" id="dateRange">-</div>
+                        <div class="label">Periode</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="processing" id="processing">
+                <div class="spinner"></div>
+                <p>Sedang memproses data...</p>
+            </div>
+
+            <div class="preview-section" id="previewSection">
+                <h4>📋 Preview Hasil Konversi (Format Book1ss - 51 Kolom)</h4>
+                <div class="table-wrapper">
+                    <table id="previewTable"><thead></thead><tbody></tbody></table>
+                </div>
+                <p style="margin-top: 10px; font-size: 0.85rem; color: #64748b;">* Preview menampilkan kolom utama. File Excel akan berisi 51 kolom lengkap dengan border.</p>
+            </div>
+
+            <div class="success-message" id="successMessage">
+                <div class="icon">✅</div>
+                <h3 style="color: #166534; margin-bottom: 8px;">Konversi Berhasil!</h3>
+                <p style="color: #64748b;">File summary dengan format Book1ss (51 kolom + border) siap didownload</p>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-primary" id="convertBtn" disabled>⚙️ Convert ke Summary</button>
+                <button class="btn btn-success" id="downloadBtn" style="display: none;">📥 Download Excel</button>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Strategic Initiative Management Office (SIMO) - Bank Sulselbar</p>
+            <p style="margin-top: 5px;">© 2025 | Developed for Change Management Office</p>
+        </div>
+    </div>
+
+    <script>
+        let rawData = null;
+        let summaryData = null;
+
+        // 51 Kolom PERSIS seperti Book1ss.xlsx
+        const COLUMNS = [
+            'No', 'Employee Code', 'Employee Name', 'Position Code', 'Position Name', 'Organization Unit',
+            'Alpha', 'No In', 'No Out', 'Izin', 'Sakit', 'Leave', 'Training', 'Meeting', 'Travel',
+            'Cuti Tahunan', 'Cuti Melahirkan', 'Cuti Umroh', 'Cuti Haji', 'Unpaid Leave',
+            'Cuti Besar (Normative)', 'Cuti Ekstra 2 Hari', 'Cuti Ekstra 3 Hari', 'Cuti Besar (Conditional)',
+            'Izin Khusus', 'Cuti Sakit', 'Absen', 'Hadir', 'Lembur Hari Biasa', 'Lembur Hari Libur',
+            'Sakit', 'Izin', 'Leave', 'Libur', 'Lembur', 'Clock In (Jam Masuk)', 'Clock Out (Jam Keluar)',
+            'Travel', 'Late In', 'Training', 'Sakit (dg Surat Keterangan Dokter)', 'Fast Out',
+            'Work From HOME', 'Izin Khusus (Penugasan Dari Kantor)', 'Meeting', 'Sakit Opname',
+            'Training Online', 'Surat Keterangan Jalan', 'Present Not Late', 'Late In (number)', 'Late In (hours)'
+        ];
+
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const convertBtn = document.getElementById('convertBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const processing = document.getElementById('processing');
+        const previewSection = document.getElementById('previewSection');
+        const successMessage = document.getElementById('successMessage');
+
+        uploadZone.addEventListener('click', () => fileInput.click());
+        uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+        uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault(); uploadZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', (e) => { if (e.target.files.length) handleFile(e.target.files[0]); });
+
+        function getField(row, fieldNames) {
+            for (const name of fieldNames) {
+                if (row[name] !== undefined && row[name] !== '') return row[name];
+            }
+            return '';
+        }
+
+        function parseHours(str) {
+            if (!str) return 0;
+            const match = str.toString().match(/(\d+):(\d+)/);
+            if (match) return parseInt(match[1]) + parseInt(match[2]) / 60;
+            return 0;
+        }
+
+        async function handleFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    let workbook;
+                    const content = e.target.result;
+                    const textContent = new TextDecoder().decode(new Uint8Array(content.slice(0, 1000)));
+                    const isHTML = textContent.includes('<html') || textContent.includes('<table') || textContent.includes('<!DOCTYPE');
+                    
+                    if (isHTML) {
+                        const fullText = new TextDecoder().decode(new Uint8Array(content));
+                        workbook = XLSX.read(fullText, { type: 'string', cellDates: true });
+                    } else {
+                        workbook = XLSX.read(new Uint8Array(content), { type: 'array', cellDates: true });
+                    }
+                    
+                    rawData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: '' });
+                    if (rawData.length === 0) { alert('File tidak memiliki data!'); return; }
+                    
+                    uploadZone.classList.add('has-file');
+                    uploadZone.innerHTML = `<div class="upload-icon">✅</div><h3>${file.name}</h3><p>File berhasil dimuat - ${rawData.length} records</p>`;
+
+                    const employees = [...new Set(rawData.map(r => getField(r, ['Employee Code'])).filter(e => e))];
+                    const dates = rawData.map(r => getField(r, ['Date'])).filter(d => d);
+                    
+                    document.getElementById('totalRows').textContent = rawData.length;
+                    document.getElementById('totalEmployees').textContent = employees.length;
+                    document.getElementById('dateRange').textContent = dates.length > 0 ? dates[0].toString().substring(0, 11) : '-';
+
+                    fileInfo.classList.add('show');
+                    convertBtn.disabled = false;
+                    previewSection.classList.remove('show');
+                    successMessage.classList.remove('show');
+                    downloadBtn.style.display = 'none';
+                } catch (err) { alert('Error: ' + err.message); console.error(err); }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        convertBtn.addEventListener('click', () => {
+            processing.classList.add('show');
+            convertBtn.disabled = true;
+            setTimeout(() => {
+                try {
+                    summaryData = convertToSummary(rawData);
+                    renderPreview(summaryData);
+                    processing.classList.remove('show');
+                    previewSection.classList.add('show');
+                    successMessage.classList.add('show');
+                    downloadBtn.style.display = 'inline-flex';
+                    convertBtn.disabled = false;
+                } catch (err) { alert('Error: ' + err.message); processing.classList.remove('show'); convertBtn.disabled = false; }
+            }, 300);
+        });
+
+        function convertToSummary(data) {
+            const grouped = {};
+
+            data.forEach(row => {
+                const empCode = getField(row, ['Employee Code']);
+                if (!empCode) return;
+
+                if (!grouped[empCode]) {
+                    grouped[empCode] = {};
+                    COLUMNS.forEach(col => grouped[empCode][col] = 0);
+                    grouped[empCode]['Employee Code'] = empCode;
+                    grouped[empCode]['Employee Name'] = getField(row, ['Employee Name']);
+                    grouped[empCode]['Position Code'] = getField(row, ['Position Code']);
+                    grouped[empCode]['Position Name'] = getField(row, ['Position Name']);
+                    grouped[empCode]['Organization Unit'] = getField(row, ['Organization Unit Name']);
+                }
+
+                const emp = grouped[empCode];
+                const code = getField(row, ['Attendance Code']);
+                const isHoliday = getField(row, ['Is Holiday']) == 1;
+                const timeIn = getField(row, ['Time In']);
+                const timeOut = getField(row, ['Time Out']);
+
+                // Map attendance codes
+                switch(code) {
+                    case 'H': emp['Hadir']++; break;
+                    case 'A': emp['Alpha']++; emp['Absen']++; break;
+                    case 'S': emp['Sakit']++; break;
+                    case 'I': emp['Izin']++; break;
+                    case 'C': case 'CT': emp['Leave']++; break;
+                    case 'LIBUR': emp['Libur']++; break;
+                    case 'T': case 'TR': emp['Travel']++; break;
+                    case 'TRN': emp['Training']++; break;
+                    case 'M': case 'MTG': emp['Meeting']++; break;
+                }
+
+                // No In/Out
+                if (!isHoliday && code !== 'LIBUR' && code === 'H') {
+                    if (!timeIn) emp['No In']++;
+                    if (!timeOut) emp['No Out']++;
+                }
+
+                // Clock counts
+                if (timeIn) emp['Clock In (Jam Masuk)']++;
+                if (timeOut) emp['Clock Out (Jam Keluar)']++;
+
+                // Late In
+                const lateIn = parseHours(getField(row, ['Late In']));
+                if (lateIn > 0) { emp['Late In']++; emp['Late In (number)']++; emp['Late In (hours)'] += lateIn; }
+
+                // Present Not Late
+                if (code === 'H' && lateIn === 0 && timeIn) emp['Present Not Late']++;
+
+                // Fast Out
+                if (parseHours(getField(row, ['Fast Out'])) > 0) emp['Fast Out']++;
+
+                // Overtime
+                const overtime = parseHours(getField(row, ['Overtime Hour']));
+                if (overtime > 0) {
+                    emp['Lembur'] += overtime;
+                    if (isHoliday) emp['Lembur Hari Libur'] += overtime;
+                    else emp['Lembur Hari Biasa'] += overtime;
+                }
+            });
+
+            return Object.values(grouped).map((emp, idx) => {
+                emp['No'] = idx + 1;
+                ['Late In (hours)', 'Lembur', 'Lembur Hari Biasa', 'Lembur Hari Libur'].forEach(k => {
+                    emp[k] = Math.round(emp[k] * 100) / 100;
+                });
+                return emp;
+            });
+        }
+
+        function renderPreview(data) {
+            const thead = document.querySelector('#previewTable thead');
+            const tbody = document.querySelector('#previewTable tbody');
+            const previewCols = ['No', 'Employee Code', 'Employee Name', 'Organization Unit', 
+                'Alpha', 'No In', 'No Out', 'Hadir', 'Sakit', 'Leave', 'Libur', 'Late In (number)', 'Present Not Late'];
+            thead.innerHTML = '<tr>' + previewCols.map(c => `<th>${c}</th>`).join('') + '</tr>';
+            tbody.innerHTML = data.map(row => 
+                '<tr>' + previewCols.map(c => `<td>${row[c] !== undefined ? row[c] : 0}</td>`).join('') + '</tr>'
+            ).join('');
+        }
+
+        downloadBtn.addEventListener('click', async () => {
+            if (!summaryData) return;
+
+            // Create workbook with ExcelJS
+            const workbook = new ExcelJS.Workbook();
+            workbook.creator = 'SIMO Bank Sulselbar';
+            workbook.created = new Date();
+            
+            const worksheet = workbook.addWorksheet('Sheet1');
+
+            // Set columns
+            worksheet.columns = COLUMNS.map((col, idx) => ({
+                header: col,
+                key: col,
+                width: ['Employee Name', 'Position Name', 'Organization Unit'].includes(col) ? 35 :
+                       col.length > 20 ? col.length + 2 : 15
+            }));
+
+            // Add data rows
+            summaryData.forEach(emp => {
+                const row = {};
+                COLUMNS.forEach(col => row[col] = emp[col] !== undefined ? emp[col] : 0);
+                worksheet.addRow(row);
+            });
+
+            // Style all cells with borders
+            const borderStyle = {
+                top: { style: 'thin', color: { argb: 'FF000000' } },
+                left: { style: 'thin', color: { argb: 'FF000000' } },
+                bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                right: { style: 'thin', color: { argb: 'FF000000' } }
+            };
+
+            // Style header row
+            worksheet.getRow(1).eachCell((cell) => {
+                cell.font = { bold: true, size: 11 };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9D9D9' } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                cell.border = borderStyle;
+            });
+            worksheet.getRow(1).height = 30;
+
+            // Style data rows
+            for (let i = 2; i <= summaryData.length + 1; i++) {
+                worksheet.getRow(i).eachCell((cell) => {
+                    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                    cell.border = borderStyle;
+                });
+            }
+
+            // Generate file
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            
+            const now = new Date();
+            const filename = `Attendance_Summary_${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}.xlsx`;
+            
+            saveAs(blob, filename);
+        });
+    </script>
+</body>
+</html>
