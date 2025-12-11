@@ -3,89 +3,401 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Attendance Converter - Bank Sulselbar</title>
+    <title>Attendance Converter - Divisi Human Capital</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
+        :root {
+            --primary: #0F4C81;
+            --primary-dark: #0A3A63;
+            --primary-light: #1565A8;
+            --secondary: #00A896;
+            --secondary-light: #02C8B0;
+            --accent: #F4B942;
+            --accent-light: #FFD166;
+            --success: #06D6A0;
+            --success-dark: #05B384;
+            --bg-light: #F0F7FF;
+            --bg-card: #FFFFFF;
+            --text-dark: #1A365D;
+            --text-muted: #64748B;
+            --border: #E2E8F0;
+            --shadow: rgba(15, 76, 129, 0.15);
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 50%, #062844 100%);
             min-height: 100vh;
             padding: 20px;
         }
-        .container { max-width: 900px; margin: 0 auto; }
-        .header { text-align: center; color: white; margin-bottom: 30px; }
-        .header h1 { font-size: 1.8rem; margin-bottom: 8px; }
-        .header p { opacity: 0.9; font-size: 0.95rem; }
-        .card {
-            background: white;
-            border-radius: 16px;
-            padding: 30px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            margin-bottom: 20px;
+
+        .container { max-width: 1400px; margin: 0 auto; }
+
+        .header { 
+            text-align: center; 
+            color: white; 
+            margin-bottom: 30px;
+            padding: 20px;
         }
+
+        .header-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .header-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            box-shadow: 0 4px 15px rgba(244, 185, 66, 0.4);
+        }
+
+        .header h1 { 
+            font-size: 2rem; 
+            font-weight: 700;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .header-subtitle {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--secondary) 0%, var(--secondary-light) 100%);
+            padding: 8px 24px;
+            border-radius: 30px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-top: 10px;
+            box-shadow: 0 4px 15px rgba(0, 168, 150, 0.3);
+        }
+
+        .header p { 
+            opacity: 0.9; 
+            font-size: 0.95rem; 
+            margin-top: 15px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 50px var(--shadow);
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
         .upload-zone {
-            border: 3px dashed #cbd5e1;
-            border-radius: 12px;
+            border: 3px dashed var(--border);
+            border-radius: 16px;
             padding: 50px 30px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
-            background: #f8fafc;
+            background: linear-gradient(135deg, var(--bg-light) 0%, #E8F4FD 100%);
         }
-        .upload-zone:hover, .upload-zone.dragover { border-color: #2a5298; background: #e8f0fe; }
-        .upload-zone.has-file { border-color: #22c55e; background: #f0fdf4; }
-        .upload-icon { font-size: 48px; margin-bottom: 15px; }
-        .upload-zone h3 { color: #334155; margin-bottom: 8px; }
-        .upload-zone p { color: #64748b; font-size: 0.9rem; }
+
+        .upload-zone:hover, .upload-zone.dragover { 
+            border-color: var(--primary); 
+            background: linear-gradient(135deg, #E0EFFF 0%, #D0E8FA 100%);
+            transform: translateY(-2px);
+        }
+
+        .upload-zone.has-file { 
+            border-color: var(--success); 
+            background: linear-gradient(135deg, #E6FFF6 0%, #D0FBE8 100%);
+        }
+
+        .upload-icon { 
+            font-size: 56px; 
+            margin-bottom: 15px;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+        }
+
+        .upload-zone h3 { 
+            color: var(--text-dark); 
+            margin-bottom: 8px; 
+            font-size: 1.2rem;
+        }
+
+        .upload-zone p { color: var(--text-muted); font-size: 0.9rem; }
         .file-input { display: none; }
-        .file-info { margin-top: 20px; padding: 15px; background: #f1f5f9; border-radius: 8px; display: none; }
+
+        .file-info { 
+            margin-top: 25px; 
+            padding: 20px; 
+            background: linear-gradient(135deg, var(--bg-light) 0%, #E8F4FD 100%);
+            border-radius: 16px; 
+            display: none;
+            border: 1px solid var(--border);
+        }
+
         .file-info.show { display: block; }
-        .file-info h4 { color: #1e3c72; margin-bottom: 10px; }
-        .file-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
-        .stat-item { background: white; padding: 12px; border-radius: 8px; text-align: center; }
-        .stat-item .value { font-size: 1.5rem; font-weight: bold; color: #2a5298; }
-        .stat-item .label { font-size: 0.8rem; color: #64748b; }
+
+        .file-info h4 { 
+            color: var(--primary); 
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .file-stats { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); 
+            gap: 15px; 
+        }
+
+        .stat-item { 
+            background: white; 
+            padding: 18px; 
+            border-radius: 12px; 
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+            transition: transform 0.2s;
+        }
+
+        .stat-item:hover {
+            transform: translateY(-3px);
+        }
+
+        .stat-item .value { 
+            font-size: 1.8rem; 
+            font-weight: 700; 
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-item .label { 
+            font-size: 0.8rem; 
+            color: var(--text-muted);
+            margin-top: 5px;
+            font-weight: 500;
+        }
+
         .btn {
-            display: inline-flex; align-items: center; gap: 8px;
-            padding: 14px 28px; border: none; border-radius: 8px;
-            font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;
+            display: inline-flex; 
+            align-items: center; 
+            gap: 10px;
+            padding: 16px 32px; 
+            border: none; 
+            border-radius: 12px;
+            font-size: 1rem; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: all 0.3s ease;
             margin: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        .btn-primary { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; }
-        .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(42, 82, 152, 0.4); }
-        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-        .btn-success { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: white; }
-        .btn-success:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(34, 197, 94, 0.4); }
-        .actions { margin-top: 25px; text-align: center; }
-        .preview-section { margin-top: 25px; display: none; }
+
+        .btn-primary { 
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); 
+            color: white;
+            box-shadow: 0 4px 20px rgba(15, 76, 129, 0.35);
+        }
+
+        .btn-primary:hover:not(:disabled) { 
+            transform: translateY(-3px); 
+            box-shadow: 0 8px 30px rgba(15, 76, 129, 0.45);
+        }
+
+        .btn-primary:disabled { 
+            opacity: 0.5; 
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-success { 
+            background: linear-gradient(135deg, var(--success) 0%, var(--success-dark) 100%); 
+            color: white;
+            box-shadow: 0 4px 20px rgba(6, 214, 160, 0.35);
+        }
+
+        .btn-success:hover { 
+            transform: translateY(-3px); 
+            box-shadow: 0 8px 30px rgba(6, 214, 160, 0.45);
+        }
+
+        .actions { margin-top: 30px; text-align: center; }
+
+        .preview-section { 
+            margin-top: 30px; 
+            display: none; 
+        }
+
         .preview-section.show { display: block; }
-        .preview-section h4 { color: #1e3c72; margin-bottom: 15px; }
-        .table-wrapper { overflow-x: auto; border-radius: 8px; border: 1px solid #333; max-height: 400px; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-        th, td { padding: 8px 10px; text-align: center; border: 1px solid #333; white-space: nowrap; }
-        th { background: #1e3c72; color: white; font-weight: 600; position: sticky; top: 0; }
-        tr:nth-child(even) { background: #f0f0f0; }
-        .processing { display: none; text-align: center; padding: 30px; }
-        .processing.show { display: block; }
-        .spinner {
-            width: 50px; height: 50px; border: 4px solid #e2e8f0; border-top-color: #2a5298;
-            border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px;
+
+        .preview-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
+
+        .preview-header h4 { 
+            color: var(--primary); 
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .preview-badge {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+            color: var(--text-dark);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .table-wrapper { 
+            overflow-x: auto; 
+            border-radius: 12px; 
+            border: 2px solid var(--primary);
+            max-height: 500px;
+            box-shadow: 0 4px 20px var(--shadow);
+        }
+
+        .table-wrapper::-webkit-scrollbar {
+            height: 10px;
+            width: 10px;
+        }
+
+        .table-wrapper::-webkit-scrollbar-track {
+            background: var(--bg-light);
+            border-radius: 5px;
+        }
+
+        .table-wrapper::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            border-radius: 5px;
+        }
+
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            font-size: 0.75rem; 
+        }
+
+        th, td { 
+            padding: 10px 8px; 
+            text-align: center; 
+            border: 1px solid var(--border); 
+            white-space: nowrap; 
+        }
+
+        th { 
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white; 
+            font-weight: 600; 
+            position: sticky; 
+            top: 0;
+            z-index: 10;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 0.3px;
+        }
+
+        tbody tr:nth-child(even) { background: var(--bg-light); }
+        tbody tr:hover { background: #E0EFFF; }
+
+        .processing { 
+            display: none; 
+            text-align: center; 
+            padding: 40px; 
+        }
+
+        .processing.show { display: block; }
+
+        .spinner {
+            width: 60px; 
+            height: 60px; 
+            border: 5px solid var(--border); 
+            border-top-color: var(--primary);
+            border-radius: 50%; 
+            animation: spin 1s linear infinite; 
+            margin: 0 auto 20px;
+        }
+
         @keyframes spin { to { transform: rotate(360deg); } }
-        .success-message { display: none; text-align: center; padding: 20px; background: #f0fdf4; border-radius: 8px; margin-top: 20px; }
+
+        .success-message { 
+            display: none; 
+            text-align: center; 
+            padding: 25px; 
+            background: linear-gradient(135deg, #E6FFF6 0%, #D0FBE8 100%);
+            border-radius: 16px; 
+            margin-top: 25px;
+            border: 2px solid var(--success);
+        }
+
         .success-message.show { display: block; }
-        .success-message .icon { font-size: 48px; margin-bottom: 10px; }
-        .footer { text-align: center; color: rgba(255,255,255,0.7); margin-top: 30px; font-size: 0.85rem; }
+        .success-message .icon { font-size: 56px; margin-bottom: 15px; }
+
+        .success-message h3 {
+            color: var(--success-dark);
+            margin-bottom: 8px;
+            font-size: 1.3rem;
+        }
+
+        .footer { 
+            text-align: center; 
+            color: rgba(255,255,255,0.8); 
+            margin-top: 30px; 
+            padding: 20px;
+        }
+
+        .footer-brand {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .footer-sub {
+            font-size: 0.85rem;
+            opacity: 0.7;
+        }
+
+        .divider {
+            height: 4px;
+            background: linear-gradient(90deg, transparent, var(--accent), var(--secondary), var(--primary), transparent);
+            border-radius: 2px;
+            margin: 20px 0;
+        }
+
+        /* Column highlight for important data */
+        td.highlight {
+            background: #FFF9E6 !important;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>📊 Attendance Converter v2</h1>
-            <p>Convert Data Absensi Detail → Summary Report (Format Book1ss - 51 Kolom) | Bank Sulselbar</p>
+            <div class="header-logo">
+                <div class="header-icon">👥</div>
+                <h1>Attendance Converter</h1>
+            </div>
+            <div class="header-subtitle">Divisi Human Capital</div>
+            <p>Konversi Data Absensi Detail → Summary Report (Format Book1ss - 51 Kolom)</p>
         </div>
 
         <div class="card">
@@ -117,21 +429,26 @@
 
             <div class="processing" id="processing">
                 <div class="spinner"></div>
-                <p>Sedang memproses data...</p>
+                <p style="color: var(--text-dark); font-weight: 500;">Sedang memproses data...</p>
             </div>
 
             <div class="preview-section" id="previewSection">
-                <h4>📋 Preview Hasil Konversi (Format Book1ss - 51 Kolom)</h4>
+                <div class="preview-header">
+                    <h4>📋 Preview Hasil Konversi</h4>
+                    <div class="preview-badge">51 Kolom Lengkap</div>
+                </div>
                 <div class="table-wrapper">
                     <table id="previewTable"><thead></thead><tbody></tbody></table>
                 </div>
-                <p style="margin-top: 10px; font-size: 0.85rem; color: #64748b;">* Preview menampilkan kolom utama. File Excel akan berisi 51 kolom lengkap.</p>
+                <p style="margin-top: 12px; font-size: 0.85rem; color: var(--text-muted); text-align: center;">
+                    💡 Scroll horizontal untuk melihat semua kolom • Data ditampilkan lengkap sesuai format Book1ss
+                </p>
             </div>
 
             <div class="success-message" id="successMessage">
                 <div class="icon">✅</div>
-                <h3 style="color: #166534; margin-bottom: 8px;">Konversi Berhasil!</h3>
-                <p style="color: #64748b;">File summary dengan format Book1ss (51 kolom) siap didownload</p>
+                <h3>Konversi Berhasil!</h3>
+                <p style="color: var(--text-muted);">File summary dengan format Book1ss (51 kolom) siap didownload</p>
             </div>
 
             <div class="actions">
@@ -141,8 +458,8 @@
         </div>
 
         <div class="footer">
-            <p>Strategic Initiative Management Office (SIMO) - Bank Sulselbar</p>
-            <p style="margin-top: 5px;">© 2025 | Developed for Change Management Office</p>
+            <div class="footer-brand">👥 Divisi Human Capital - Bank Sulselbar</div>
+            <div class="footer-sub">© 2025 | Attendance Management System</div>
         </div>
     </div>
 
@@ -272,7 +589,7 @@
                     successMessage.classList.add('show');
                     downloadBtn.style.display = 'inline-flex';
                     convertBtn.disabled = false;
-                } catch (err) { alert('Error: ' + err.message); console.error(err); }
+                } catch (err) { alert('Error: ' + err.message); processing.classList.remove('show'); convertBtn.disabled = false; }
             }, 300);
         });
 
@@ -388,28 +705,16 @@
             const thead = document.querySelector('#previewTable thead');
             const tbody = document.querySelector('#previewTable tbody');
             
-            // Preview columns dengan mapping ke internal keys
-            const previewCols = [
-                { header: 'No', key: 'no' },
-                { header: 'Employee Code', key: 'empCode' },
-                { header: 'Employee Name', key: 'empName' },
-                { header: 'Organization Unit', key: 'orgUnit' },
-                { header: 'Alpha', key: 'alpha' },
-                { header: 'No In', key: 'noIn' },
-                { header: 'No Out', key: 'noOut' },
-                { header: 'Hadir', key: 'hadir' },
-                { header: 'Sakit', key: 'sakit1' },
-                { header: 'Izin', key: 'izin1' },
-                { header: 'Leave', key: 'leave1' },
-                { header: 'Libur', key: 'libur' },
-                { header: 'Late In', key: 'lateInNumber' },
-                { header: 'Present Not Late', key: 'presentNotLate' }
-            ];
+            // Render ALL 51 columns
+            thead.innerHTML = '<tr>' + COLUMN_HEADERS.map(h => `<th>${h}</th>`).join('') + '</tr>';
             
-            thead.innerHTML = '<tr>' + previewCols.map(c => `<th>${c.header}</th>`).join('') + '</tr>';
-            tbody.innerHTML = data.map(row => 
-                '<tr>' + previewCols.map(c => `<td>${row[c.key] !== undefined ? row[c.key] : 0}</td>`).join('') + '</tr>'
-            ).join('');
+            tbody.innerHTML = data.map(row => {
+                const cells = DATA_KEYS.map(key => {
+                    const val = row[key];
+                    return `<td>${val !== undefined && val !== '' ? val : 0}</td>`;
+                });
+                return '<tr>' + cells.join('') + '</tr>';
+            }).join('');
         }
 
         downloadBtn.addEventListener('click', async () => {
@@ -417,7 +722,7 @@
 
             // Create workbook with ExcelJS
             const workbook = new ExcelJS.Workbook();
-            workbook.creator = 'SIMO Bank Sulselbar';
+            workbook.creator = 'Divisi Human Capital - Bank Sulselbar';
             workbook.created = new Date();
             
             const worksheet = workbook.addWorksheet('Sheet1');
